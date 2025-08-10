@@ -1,15 +1,3 @@
-// const express = require("express");
-// const router = express.Router();
-// const antrianController = require("../controllers/antrianController");
-
-// // User ambil nomor antrian
-// router.post("/ambil", antrianController.ambilNomor);
-
-// // Admin lihat semua antrian
-// router.get("/semua", antrianController.getAllAntrian);
-
-// module.exports = router;
-
 const express = require("express");
 const router = express.Router();
 const antrianController = require("../controllers/antrianController");

@@ -1,32 +1,29 @@
 // controllers/authController.js
 const db = require("../config/db");
-const bcrypt = require("bcrypt"); // kalau mau pakai hash password
 
-// Login khusus admin
 exports.loginAdmin = (req, res) => {
   const {email, password} = req.body;
 
   db.query("SELECT * FROM admin WHERE email = ?", [email], async (err, results) => {
-    if (err) return res.status(500).json({message: "Error database", error: err});
-    if (results.length === 0) return res.status(401).json({message: "Email tidak ditemukan"});
+    if (err) return res.status(500).json({success: false, message: "Error database", error: err});
+    if (results.length === 0) return res.status(401).json({success: false, message: "Email tidak ditemukan"});
 
     const admin = results[0];
 
-    // Kalau password di-hash di DB
-    // const isMatch = await bcrypt.compare(password, admin.password);
-    // if (!isMatch) return res.status(401).json({ message: "Password salah" });
-
-    // Kalau password masih plain text
+    // Password masih plain text
     if (admin.password !== password) {
-      return res.status(401).json({message: "Password salah"});
+      return res.status(401).json({success: false, message: "Password salah"});
     }
 
     res.json({
+      success: true,
       message: "Login admin berhasil",
-      admin: {
+      user: {
+        // <-- pakai 'user' biar cocok dengan Flutter
         id: admin.id,
         nama: admin.nama,
         email: admin.email,
+        role: "admin", // <-- penting untuk validasi di Flutter
       },
     });
   });
