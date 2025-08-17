@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AntrianService {
-  static const String baseUrl = "http://localhost:3000/api/antrian";
+  static const String baseUrl = "http://localhost:3000/api/users";
 
-  // Daftar antrian baru
+  // Daftar user baru untuk antrian
   static Future<Map<String, dynamic>> daftarAntrian({
     required String nama,
     required String nik,
@@ -27,7 +27,7 @@ class AntrianService {
         return {
           "success": false,
           "message": jsonDecode(response.body)["message"] ??
-              "Gagal mendaftar antrian"
+              "Gagal mendaftar"
         };
       }
     } catch (e) {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../admin/dashboard_screen.dart'; // Impor DashboardScreen
+import '../services/auth_service.dart'; // Pastikan file AuthService diimpor
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -22,23 +24,33 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     });
 
     try {
-      final response = await http.post(
-        Uri.parse("http://localhost:3000/api/admin/login"),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          "email": emailController.text,
-          "password": passwordController.text,
-        }),
+      final result = await AuthService.login(
+        emailController.text,
+        passwordController.text,
       );
 
-      final data = json.decode(response.body);
+      print("Login Result: $result"); // Debug untuk memeriksa isi result
 
-      if (response.statusCode == 200) {
-        // Login sukses → arahkan ke dashboard admin
-        Navigator.pushReplacementNamed(context, "/admin-dashboard");
+      if (result["success"] == true) {
+        // Ambil data admin dari respons
+        final adminData = result["user"];
+        print("Admin Data: $adminData"); // Debug untuk memeriksa data admin
+        if (adminData == null || adminData.isEmpty) {
+          setState(() {
+            errorMessage = "Data admin tidak valid";
+          });
+          return;
+        }
+        // Navigasi langsung ke DashboardScreen dengan data admin
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DashboardScreen(admin: adminData),
+          ),
+        );
       } else {
         setState(() {
-          errorMessage = data["message"] ?? "Login gagal";
+          errorMessage = result["message"];
         });
       }
     } catch (e) {

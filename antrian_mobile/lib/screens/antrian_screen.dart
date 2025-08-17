@@ -15,14 +15,12 @@ class _AntrianScreenState extends State<AntrianScreen> {
   final TextEditingController layananController = TextEditingController();
 
   bool isLoading = false;
-  String? nomorAntrian;
 
   Future<void> handleDaftar() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       isLoading = true;
-      nomorAntrian = null;
     });
 
     final result = await AntrianService.daftarAntrian(
@@ -36,16 +34,16 @@ class _AntrianScreenState extends State<AntrianScreen> {
     });
 
     if (result["success"] != false) {
-      setState(() {
-        nomorAntrian = result["data"]?["nomor_antrian"]?.toString() ?? "-";
-      });
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result["message"] ?? "Pendaftaran berhasil"),
           backgroundColor: Colors.green,
         ),
       );
+
+      namaController.clear();
+      nikController.clear();
+      layananController.clear();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -115,19 +113,6 @@ class _AntrianScreenState extends State<AntrianScreen> {
                         style: TextStyle(fontSize: 16),
                       ),
               ),
-              if (nomorAntrian != null) ...[
-                const SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    "Nomor Antrian Anda: $nomorAntrian",
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                ),
-              ]
             ],
           ),
         ),
