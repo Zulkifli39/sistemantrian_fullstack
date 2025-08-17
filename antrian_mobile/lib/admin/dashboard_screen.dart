@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'verifikasi_screen.dart';
+import 'status_screen.dart';
+import 'laporan_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Map<String, dynamic> admin;
@@ -25,21 +28,36 @@ class DashboardScreen extends StatelessWidget {
             // Tombol Menu
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/verifikasi");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VerifikasiScreen(),
+                  ),
+                );
               },
               child: const Text("Verifikasi Antrian"),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/ubah-status");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StatusScreen(),
+                  ),
+                );
               },
-              child: const Text("Ubah Status Antrian"),
+              child: const Text("Status Antrian"),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/laporan");
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LaporanScreen(),
+                  ),
+                );
               },
               child: const Text("Laporan Antrian"),
             ),
