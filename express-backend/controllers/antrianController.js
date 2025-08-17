@@ -1,3 +1,4 @@
+// controllers/antrianController.js
 const db = require("../config/db");
 
 // User daftar antrian → insert ke tabel users
@@ -9,11 +10,11 @@ exports.daftarAntrian = async (req, res) => {
       return res.status(400).json({success: false, message: "Semua field wajib diisi"});
     }
 
-    // Simpan user baru
-    const [userResult] = await db.query("INSERT INTO users (nama, nik, jenis_layanan) VALUES (?, ?, ?)", [
+    const [userResult] = await db.query("INSERT INTO users (nama, nik, jenis_layanan, status) VALUES (?, ?, ?, ?)", [
       nama,
       nik,
       jenis_layanan,
+      "Menunggu Verifikasi",
     ]);
 
     res.status(201).json({
@@ -24,30 +25,36 @@ exports.daftarAntrian = async (req, res) => {
         nama,
         nik,
         jenis_layanan,
+        status: "Menunggu Verifikasi",
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({success: false, message: "Terjadi kesalahan server"});
+    console.error("Error in daftarAntrian:", error);
+    res.status(500).json({success: false, message: `Terjadi kesalahan server: ${error.message}`});
   }
 };
 
 // Admin verifikasi → insert ke tabel antrian
 exports.verifikasiAntrian = async (req, res) => {
   try {
-    const {id} = req.params; // id pendaftar
+    const {id} = req.params;
 
-    // Cari nomor antrian terakhir
+    const [existingAntrian] = await db.query("SELECT * FROM antrian WHERE user_id = ?", [id]);
+    if (existingAntrian.length > 0) {
+      return res.status(400).json({success: false, message: "User sudah diverifikasi"});
+    }
+
     const [rows] = await db.query("SELECT MAX(nomor_antrian) AS lastNumber FROM antrian");
     const lastNumber = rows[0].lastNumber || 0;
     const newNumber = lastNumber + 1;
 
-    // Update status & nomor antrian
-    await db.query("UPDATE antrian SET nomor_antrian = ?, status_layanan = ? WHERE id = ?", [
+    await db.query("INSERT INTO antrian (user_id, nomor_antrian, status_layanan) VALUES (?, ?, ?)", [
+      id,
       newNumber,
       "Menunggu",
-      id,
     ]);
+
+    await db.query("UPDATE users SET status = ? WHERE id = ?", ["Terverifikasi", id]);
 
     res.json({
       success: true,
@@ -55,8 +62,8 @@ exports.verifikasiAntrian = async (req, res) => {
       nomor_antrian: newNumber,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({message: "Terjadi kesalahan server"});
+    console.error("Error in verifikasiAntrian:", error);
+    res.status(500).json({success: false, message: `Terjadi kesalahan server: ${error.message}`});
   }
 };
 
@@ -64,7 +71,7 @@ exports.verifikasiAntrian = async (req, res) => {
 exports.getAllPendaftar = async (req, res) => {
   try {
     const [rows] = await db.query(`
-      SELECT users.id AS user_id, users.nama, users.nik, users.jenis_layanan,
+      SELECT users.id AS user_id, users.nama, users.nik, users.jenis_layanan, users.status,
              antrian.nomor_antrian, antrian.status_layanan
       FROM users
       LEFT JOIN antrian ON users.id = antrian.user_id
@@ -72,7 +79,7 @@ exports.getAllPendaftar = async (req, res) => {
     `);
     res.json({success: true, data: rows});
   } catch (error) {
-    console.error(error);
-    res.status(500).json({success: false, message: "Gagal mengambil data"});
+    console.error("Error in getAllPendaftar:", error);
+    res.status(500).json({success: false, message: `Gagal mengambil data: ${error.message}`});
   }
 };

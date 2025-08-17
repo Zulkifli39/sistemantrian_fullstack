@@ -1,3 +1,4 @@
+// routes/antrian.js
 const express = require("express");
 const router = express.Router();
 const antrianController = require("../controllers/antrianController");
@@ -6,7 +7,7 @@ const antrianController = require("../controllers/antrianController");
 router.post("/daftar", antrianController.daftarAntrian);
 
 // Admin verifikasi
-router.put("/verifikasi/:id", antrianController.verifikasiAntrian);
+router.post("/verifikasi/:id", antrianController.verifikasiAntrian); // Ubah dari PUT ke POST
 
 // Lihat semua pendaftar
 router.get("/pendaftar", antrianController.getAllPendaftar);
