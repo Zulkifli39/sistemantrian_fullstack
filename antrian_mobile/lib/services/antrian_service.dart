@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AntrianService {
-  static const String baseUrl = "http://localhost:3000/api/users";
+  static const String baseUrl = "http://localhost:3000/api/antrian";
 
   // Daftar user baru untuk antrian
   static Future<Map<String, dynamic>> daftarAntrian({
