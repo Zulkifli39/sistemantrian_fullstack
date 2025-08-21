@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:provider/provider.dart';
+import '../providers/antrian_provider.dart'; // Pastikan import ini sesuai dengan lokasi file AntrianProvider
 
 class DaftarPendaftarScreen extends StatefulWidget {
   final int userId;
@@ -14,27 +16,23 @@ class DaftarPendaftarScreen extends StatefulWidget {
 }
 
 class _DaftarPendaftarScreenState extends State<DaftarPendaftarScreen> {
-  List<dynamic> pendaftar = [];
   bool isLoading = true; // Start with loading true
-
-    final String baseUrl = "http://localhost:3000/api/antrian"; 
+  final String baseUrl = "http://localhost:3000/api/antrian";
 
   @override
   void initState() {
     super.initState();
-    fetchPendaftar();
+    // Fetch data awal saat inisialisasi
+    _fetchInitialData();
   }
 
-  Future<void> fetchPendaftar() async {
-    // No need to set isLoading to true here, it's set initially
+  Future<void> _fetchInitialData() async {
     try {
       final response = await http.get(Uri.parse("$baseUrl/pendaftar"));
-      if (mounted) { // Check if the widget is still in the tree
+      if (mounted) {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          setState(() {
-            pendaftar = data["data"] ?? [];
-          });
+          Provider.of<AntrianProvider>(context, listen: false).setPendaftar(data["data"] ?? []);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Gagal memuat data: ${response.statusCode}")),
@@ -102,76 +100,82 @@ class _DaftarPendaftarScreenState extends State<DaftarPendaftarScreen> {
         foregroundColor: Colors.black87,
         elevation: 1,
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : pendaftar.isEmpty
-              ? _buildEmptyState()
-              : AnimationLimiter(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: pendaftar.length,
-                    itemBuilder: (context, index) {
-                      final user = pendaftar[index];
-                      return AnimationConfiguration.staggeredList(
-                        position: index,
-                        duration: const Duration(milliseconds: 375),
-                        child: SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              elevation: 4,
-                              shadowColor: Colors.black.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 25,
-                                      backgroundColor: Colors.blue.withOpacity(0.1),
-                                      child: const Icon(
-                                        Icons.person_outline,
-                                        color: Colors.blue,
-                                        size: 30,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            user["nama"] ?? "Nama tidak tersedia",
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
+      body: Consumer<AntrianProvider>(
+        builder: (context, antrianProvider, child) {
+          final pendaftar = antrianProvider.pendaftar;
+          return isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : pendaftar.isEmpty
+                  ? _buildEmptyState()
+                  : AnimationLimiter(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: pendaftar.length,
+                        itemBuilder: (context, index) {
+                          final user = pendaftar[index];
+                          print('Item $index - ID: ${user["user_id"]}, Nama: ${user["nama"]}, Status: ${user["status"]}');
+                          return AnimationConfiguration.staggeredList(
+                            position: index,
+                            duration: const Duration(milliseconds: 375),
+                            child: SlideAnimation(
+                              verticalOffset: 50.0,
+                              child: FadeInAnimation(
+                                child: Card(
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  elevation: 4,
+                                  shadowColor: Colors.black.withOpacity(0.1),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(15),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 25,
+                                          backgroundColor: Colors.blue.withOpacity(0.1),
+                                          child: const Icon(
+                                            Icons.person_outline,
+                                            color: Colors.blue,
+                                            size: 30,
                                           ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "Layanan: ${user["jenis_layanan"]}",
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.grey[600],
-                                              fontSize: 14,
-                                            ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                user["nama"] ?? "Nama tidak tersedia",
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "Layanan: ${user["jenis_layanan"]}",
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        _buildStatusChip(user["status"] ?? 'Menunggu Verifikasi'),
+                                      ],
                                     ),
-                                    _buildStatusChip(user["status"] ?? 'Menunggu Verifikasi'),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                          );
+                        },
+                      ),
+                    );
+        },
+      ),
     );
   }
 

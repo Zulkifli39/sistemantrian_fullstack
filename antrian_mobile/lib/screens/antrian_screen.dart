@@ -15,7 +15,16 @@ class _AntrianScreenState extends State<AntrianScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController namaController = TextEditingController();
   final TextEditingController nikController = TextEditingController();
-  final TextEditingController layananController = TextEditingController();
+  String? _selectedLayanan;
+
+  final List<String> _layananOptions = [
+    'Desposisi surat masuk',
+    'Register spm ls',
+    'pengurusan skpp gaji',
+    'Spm ls listrik',
+    'Spm ls honor',
+    'Spm pekerjaan',
+  ];
 
   bool isLoading = false;
 
@@ -29,7 +38,7 @@ class _AntrianScreenState extends State<AntrianScreen> {
     final result = await AntrianService.daftarAntrian(
       nama: namaController.text,
       nik: nikController.text,
-      jenisLayanan: layananController.text,
+      jenisLayanan: _selectedLayanan!,
     );
 
     setState(() => isLoading = false);
@@ -47,7 +56,9 @@ class _AntrianScreenState extends State<AntrianScreen> {
       _formKey.currentState?.reset();
       namaController.clear();
       nikController.clear();
-      layananController.clear();
+      setState(() {
+        _selectedLayanan = null;
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -118,10 +129,42 @@ class _AntrianScreenState extends State<AntrianScreen> {
                         keyboardType: TextInputType.number,
                       ),
                       const SizedBox(height: 20),
-                      _buildTextFormField(
-                        controller: layananController,
-                        labelText: "Jenis Layanan yang Dituju",
-                        icon: Icons.business_center_outlined,
+                      // PERUBAHAN: Mengganti TextFormField dengan Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _selectedLayanan,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: "Jenis Layanan yang Dituju",
+                          labelStyle: GoogleFonts.poppins(color: Colors.grey[700]),
+                          prefixIcon: Icon(Icons.business_center_outlined, color: Colors.blue[700]),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+                          ),
+                        ),
+                        hint: Text("Pilih Layanan", style: GoogleFonts.poppins()),
+                        items: _layananOptions.map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value, style: GoogleFonts.poppins()),
+                          );
+                        }).toList(),
+                        onChanged: (newValue) {
+                          setState(() {
+                            _selectedLayanan = newValue;
+                          });
+                        },
+                        validator: (value) => value == null ? 'Jenis layanan wajib dipilih' : null,
                       ),
                     ],
                   ),
@@ -197,7 +240,6 @@ class _AntrianScreenState extends State<AntrianScreen> {
   void dispose() {
     namaController.dispose();
     nikController.dispose();
-    layananController.dispose();
     super.dispose();
   }
 }

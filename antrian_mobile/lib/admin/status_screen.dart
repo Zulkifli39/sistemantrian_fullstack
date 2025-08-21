@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../providers/antrian_provider.dart';
 
 class StatusScreen extends StatefulWidget {
   const StatusScreen({super.key});
@@ -10,18 +12,11 @@ class StatusScreen extends StatefulWidget {
 }
 
 class _StatusScreenState extends State<StatusScreen> {
-  List<dynamic> antrian = [];
   bool isLoading = false;
 
-  final String baseUrl = "http://localhost:3000/api/antrian"; // Untuk browser
+  final String baseUrl = "http://localhost:3000/api/antrian";
 
-  @override
-  void initState() {
-    super.initState();
-    fetchAntrian();
-  }
-
-  Future<void> fetchAntrian() async {
+  Future<void> fetchAntrian(BuildContext context) async {
     setState(() => isLoading = true);
     try {
       final response = await http.get(Uri.parse("$baseUrl/daftar-antrian"));
@@ -29,10 +24,7 @@ class _StatusScreenState extends State<StatusScreen> {
       print('Response body: ${response.body}');
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        setState(() {
-          antrian = data["data"] ?? [];
-          print('Antrian: $antrian');
-        });
+        Provider.of<AntrianProvider>(context, listen: false).setAntrian(data["data"] ?? []);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal memuat data: ${response.statusCode}")),
@@ -48,7 +40,7 @@ class _StatusScreenState extends State<StatusScreen> {
     }
   }
 
-  Future<void> updateStatus(String id) async {
+  Future<void> updateStatus(String id, BuildContext context) async {
     try {
       final response = await http.put(
         Uri.parse("$baseUrl/update-status/$id"),
@@ -61,7 +53,7 @@ class _StatusScreenState extends State<StatusScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data["message"])),
         );
-        await fetchAntrian(); // Refresh data
+        Provider.of<AntrianProvider>(context, listen: false).updateAntrianStatus(id, "Selesai");
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal memperbarui status: ${response.statusCode}")),
@@ -75,7 +67,7 @@ class _StatusScreenState extends State<StatusScreen> {
     }
   }
 
-  Future<void> deleteAntrian(String id) async {
+  Future<void> deleteAntrian(String id, BuildContext context) async {
     try {
       final response = await http.delete(
         Uri.parse("$baseUrl/delete/$id"),
@@ -88,7 +80,7 @@ class _StatusScreenState extends State<StatusScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data["message"])),
         );
-        await fetchAntrian(); // Refresh data
+        Provider.of<AntrianProvider>(context, listen: false).deleteAntrian(id);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Gagal menghapus antrian: ${response.statusCode}")),
@@ -103,49 +95,59 @@ class _StatusScreenState extends State<StatusScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    fetchAntrian(context);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Status Antrian'),
-        backgroundColor: Colors.blue,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : antrian.isEmpty
-              ? const Center(child: Text("Belum ada antrian"))
-              : ListView.builder(
-                  itemCount: antrian.length,
-                  itemBuilder: (context, index) {
-                    final item = antrian[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Text(item["nama"] ?? "Nama tidak tersedia"),
-                        subtitle: Text(
-                          "Nomor Antrian: ${item["nomor_antrian"]}\nStatus: ${item["status_layanan"]}",
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (item["status_layanan"] != "Selesai")
-                              IconButton(
-                                icon: const Icon(Icons.check_circle, color: Colors.green),
-                                onPressed: () => updateStatus(item["id"].toString()),
-                              ),
-                            if (item["status_layanan"] == "Selesai")
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => deleteAntrian(item["id"].toString()),
-                              ),
-                          ],
-                        ),
-                        onTap: item["status_layanan"] != "Selesai"
-                            ? () => updateStatus(item["id"].toString())
-                            : null,
-                      ),
-                    );
-                  },
-                ),
+    return Consumer<AntrianProvider>(
+      builder: (context, antrianProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Status Antrian'),
+            backgroundColor: Colors.blue,
+          ),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : antrianProvider.antrian.isEmpty
+                  ? const Center(child: Text("Belum ada antrian"))
+                  : ListView.builder(
+                      itemCount: antrianProvider.antrian.length,
+                      itemBuilder: (context, index) {
+                        final item = antrianProvider.antrian[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: ListTile(
+                            title: Text(item["nama"] ?? "Nama tidak tersedia"),
+                            subtitle: Text(
+                              "Nomor Antrian: ${item["nomor_antrian"]}\nStatus: ${item["status_layanan"]}",
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (item["status_layanan"] != "Selesai")
+                                  IconButton(
+                                    icon: const Icon(Icons.check_circle, color: Colors.green),
+                                    onPressed: () => updateStatus(item["id"].toString(), context),
+                                  ),
+                                if (item["status_layanan"] == "Selesai")
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => deleteAntrian(item["id"].toString(), context),
+                                  ),
+                              ],
+                            ),
+                            onTap: item["status_layanan"] != "Selesai"
+                                ? () => updateStatus(item["id"].toString(), context)
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+        );
+      },
     );
   }
 }
