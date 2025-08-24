@@ -1,16 +1,14 @@
+// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'daftarpendaftar_screen.dart';
-import 'daftarantrian_screen.dart';
 import 'statuslayanan_screen.dart';
-import 'admin_login_screen.dart';
 import 'antrian_screen.dart';
-// Import halaman login Anda, ganti 'login_screen.dart' dengan nama file yang benar
-// import 'login_screen.dart'; 
+import 'admin_login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final Map<String, dynamic> user;
-
   const HomeScreen({super.key, required this.user});
 
   @override
@@ -18,282 +16,346 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  // Warna utama modern
+  static const Color kPrimary = Color(0xFF2563EB); // blue-600
+  static const Color kPrimaryDark = Color(0xFF1E3A8A); // blue-900
+  static const double kButtonWidth = 270;
 
-  // Daftar halaman yang akan ditampilkan di body
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = <Widget>[
-      _buildHomeDashboard(context), // Halaman Utama (Dashboard)
-      DaftarPendaftarScreen(userId: widget.user["id"]), // Halaman Daftar Pendaftar
-      const AntrianScreen(), // Halaman Ambil Antrian
-      StatusLayananScreen(userId: widget.user["id"]), // Halaman Status Layanan
-      _buildProfilePage(context), // Halaman Profil & Admin
-    ];
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  int _bottomIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Body akan berubah sesuai item yang dipilih di bottom navigation
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Utama',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline),
-            label: 'Pendaftar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_card_outlined),
-            label: 'Ambil Antrian',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_toggle_off_rounded), // Ikon diubah agar tidak sama
-            label: 'Status Layanan', // Label disesuaikan dengan nama screen
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profil',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        // Style untuk bottom navigation bar yang modern
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue[700],
-        unselectedItemColor: Colors.grey[500],
-        selectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(),
-        elevation: 10,
-      ),
-    );
-  }
-
-  // WIDGET UNTUK HALAMAN UTAMA (TAB 1)
-  Widget _buildHomeDashboard(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        toolbarHeight: 80,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Selamat Datang,',
-              style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 16),
-            ),
-            Text(
-              // PERBAIKAN: Menambahkan fallback jika 'nama' null untuk mencegah error
-              widget.user['nama'] ?? 'Pengguna',
-              style: GoogleFonts.poppins(
-                  color: Colors.black87,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.blue[100],
-              child: Icon(Icons.person, color: Colors.blue[800]),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Kartu Informasi Antrian Utama
-            Container(
-              padding: const EdgeInsets.all(24),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue[700]!, Colors.blue[400]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  )
+      backgroundColor: const Color(0xFFF7F9FC),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+          child: Column(
+            children: [
+              // ======= HEADER + LOGO =======
+              Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: 120, // Reduced from 120
+                      width: 120,  // Reduced from 120
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 74,
+                        width: 74,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: kPrimary.withOpacity(.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.apartment_rounded,
+                            color: kPrimaryDark, size: 34),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2), // Added small spacing
+                  Text(
+                    "ANTRIAN ONLINE",
+                    style: GoogleFonts.poppins(
+                      fontSize: 24, // Reduced from 26
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .4,
+                      color: kPrimaryDark,
+                    ),
+                  ),
+                  const SizedBox(height: 4), // Reduced from 6
+                  Text(
+                    "BADAN PENGELOLAAN KEUANGAN DAN ASET\nDAERAH KOTA PALOPO",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11.5,
+                      height: 1.35,
+                      color: Colors.blueGrey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Antrian Saat Ini',
-                    style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.8), fontSize: 16),
-                  ),
-                  Text(
-                    'A-05', // TODO: Ganti dengan data asli dari API
-                    style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+              const SizedBox(height: 24),
+
+              // ======= KARTU INFORMASI ANTRIAN =======
+              _InfoCard(
+                primary: kPrimary,
+                primaryDark: kPrimaryDark,
+                items: const [
+                  _InfoItem(label: "Nomor Saat Ini", value: "A-05"),
+                  _InfoItem(label: "Total Antrian", value: "24"),
+                  _InfoItem(label: "Selesai Hari Ini", value: "18"),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // ======= TOMBOL UTAMA =======
+              _MainButton(
+                title: "Daftar",
+                icon: Icons.edit_note_rounded,
+                onTap: () {
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const AntrianScreen()));
+                },
+                width: kButtonWidth,
+              ),
+              const SizedBox(height: 16),
+              _MainButton(
+                title: "Daftar Pendaftar",
+                icon: Icons.people_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          DaftarPendaftarScreen(userId: widget.user["id"]),
+                    ),
+                  );
+                },
+                width: kButtonWidth,
+              ),
+              const SizedBox(height: 16),
+              _MainButton(
+                title: "Status Layanan",
+                icon: Icons.access_time_filled_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          StatusLayananScreen(userId: widget.user["id"]),
+                    ),
+                  );
+                },
+                width: kButtonWidth,
+              ),
+
+              const SizedBox(height: 28),
+
+              // ======= INFORMASI TAMBAHAN =======
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Nomor Anda',
-                            style: GoogleFonts.poppins(
-                                color: Colors.white.withOpacity(0.8)),
-                          ),
-                          Text(
-                            'A-12', // TODO: Ganti dengan data asli dari API
-                            style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      Text("Informasi Tambahan",
+                          style: GoogleFonts.poppins(
+                              fontSize: 16, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 14),
+                      ListTile(
+                        leading: const Icon(Icons.access_time,
+                            color: kPrimaryDark),
+                        title: const Text("Jam Operasional"),
+                        subtitle:
+                            const Text("Senin – Jumat, 08.00 – 16.00 WITA"),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Estimasi Waktu',
-                            style: GoogleFonts.poppins(
-                                color: Colors.white.withOpacity(0.8)),
-                          ),
-                          Text(
-                            '15 Menit', // TODO: Ganti dengan data asli dari API
-                            style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
+                      ListTile(
+                        leading: const Icon(Icons.location_on,
+                            color: kPrimaryDark),
+                        title: const Text("Alamat & Kontak"),
+                        subtitle: const Text(
+                            "Jl. Merdeka No. 45, Kota Palopo\nWhatsApp: 0821-xxxx-xxxx\nEmail: helpdesk@bpkad.go.id"),
+                      ),
+                      ListTile(
+                        leading:
+                            const Icon(Icons.info_outline, color: kPrimaryDark),
+                        title: const Text("Tips"),
+                        subtitle: const Text(
+                            "Pastikan membawa dokumen lengkap sebelum menuju loket."),
                       ),
                     ],
-                  )
-                ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            // Judul Layanan
-            Text(
-              'Layanan Tersedia',
-              style: GoogleFonts.poppins(
-                  fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            // Daftar Layanan
-            _buildServiceTile(Icons.support_agent, 'Layanan Pelanggan',
-                'Bantuan dan informasi umum.'),
-            _buildServiceTile(Icons.how_to_reg, 'Pendaftaran Baru',
-                'Pendaftaran untuk layanan baru.'),
-            _buildServiceTile(
-                Icons.payment, 'Pembayaran', 'Layanan kasir dan pembayaran.'),
-          ],
+            ],
+          ),
         ),
+      ),
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _bottomIndex,
+        onTap: (i) {
+          if (i == 0) {
+            setState(() => _bottomIndex = 0); // Home tetap
+          } else if (i == 1) {
+            // Navigate to the actual AdminLoginScreen
+            Navigator.push(
+              context, 
+              MaterialPageRoute(
+                builder: (context) => const AdminLoginScreen()
+              )
+            ).then((_) {
+              // Reset bottom index when returning
+              setState(() => _bottomIndex = 0);
+            });
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: kPrimary,
+        unselectedItemColor: Colors.grey[500],
+        selectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600, fontSize: 12),
+        unselectedLabelStyle: GoogleFonts.poppins(
+            fontWeight: FontWeight.w500, fontSize: 11),
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.admin_panel_settings_rounded), label: "Login Admin"),
+        ],
       ),
     );
   }
+}
 
-  // WIDGET UNTUK HALAMAN PROFIL (TAB 4)
-  Widget _buildProfilePage(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Profil & Pengaturan',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
-      backgroundColor: Colors.grey[100],
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Tombol Login Admin
-            ListTile(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const AdminLoginScreen()),
-                );
-              },
-              leading: Icon(Icons.admin_panel_settings, color: Colors.red[700]),
-              title: Text('Login Sebagai Admin',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              tileColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            const SizedBox(height: 16),
-            // Tombol Logout
-            ListTile(
-              onTap: () {
-                // PERBAIKAN: Logika logout ditambahkan
-                // Kembali ke halaman login dan hapus semua halaman sebelumnya
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => AdminLoginScreen()), // Ganti dengan halaman login user Anda
-                  (Route<dynamic> route) => false,
-                );
-              },
-              leading: Icon(Icons.logout, color: Colors.grey[700]),
-              title: Text('Logout',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              tileColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          ],
+// ====================== WIDGET KARTU INFO ======================
+class _InfoCard extends StatelessWidget {
+  final List<_InfoItem> items;
+  final Color primary;
+  final Color primaryDark;
+  const _InfoCard({
+    required this.items,
+    required this.primary,
+    required this.primaryDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primary, primaryDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(.35),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Informasi Antrian",
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              for (int i = 0; i < items.length; i++) ...[
+                Expanded(child: _InfoTile(item: items[i])),
+                if (i != items.length - 1)
+                  Container(
+                    width: 1,
+                    height: 32,
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    color: Colors.white.withOpacity(.35),
+                  ),
+              ],
+            ],
+          ),
+        ],
       ),
     );
   }
+}
 
-  // Widget helper untuk item layanan
-  Widget _buildServiceTile(IconData icon, String title, String subtitle) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blue[700], size: 30),
-        title: Text(title,
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: GoogleFonts.poppins()),
+class _InfoItem {
+  final String label;
+  final String value;
+  const _InfoItem({required this.label, required this.value});
+}
+
+class _InfoTile extends StatelessWidget {
+  final _InfoItem item;
+  const _InfoTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          item.label,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          item.value,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            letterSpacing: .5,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ====================== WIDGET TOMBOL ======================
+class _MainButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final double width;
+
+  const _MainButton({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: 54,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, color: Colors.white, size: 22),
+        label: Text(
+          title,
+          style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16.5,
+              fontWeight: FontWeight.w700),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2E6BFF),
+          elevation: 8,
+          shadowColor: const Color(0xFF2E6BFF).withOpacity(.45),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        ),
       ),
     );
   }

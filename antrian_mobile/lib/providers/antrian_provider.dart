@@ -130,7 +130,7 @@ class AntrianProvider with ChangeNotifier {
     }
   }
 
-  // ====== NEXT / PREVIOUS ======
+  // ====== NEXT / PREVIOUS / ULANG ======
 
   void callNext() {
     if (_antrian.isNotEmpty && _nowServingIndex < _antrian.length - 1) {
@@ -154,6 +154,17 @@ class AntrianProvider with ChangeNotifier {
       debugPrint("⬅️ Prev: $text");
       _speak(text);
       notifyListeners();
+    }
+  }
+
+  void panggilUlang() {
+    if (_antrian.isNotEmpty) {
+      final nomor = _antrian[_nowServingIndex]["nomor_antrian"];
+      final nama = _antrian[_nowServingIndex]["nama"];
+      final text =
+          "Panggilan ulang, nomor antrian $nomor, atas nama $nama, silakan menuju loket.";
+      debugPrint("🔁 Ulang: $text");
+      _speak(text);
     }
   }
 

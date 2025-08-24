@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:provider/provider.dart';
+import '../providers/antrian_provider.dart';
+import 'home_screen.dart';
+import 'admin_login_screen.dart';
 
 class StatusLayananScreen extends StatefulWidget {
   final int userId;
@@ -14,30 +18,25 @@ class StatusLayananScreen extends StatefulWidget {
 }
 
 class _StatusLayananScreenState extends State<StatusLayananScreen> {
-  List<dynamic> layananSelesai = [];
   bool isLoading = true;
-
   final String baseUrl = "http://localhost:3000/api/antrian";
+
+  int _bottomIndex = 0; // ✅ tambahkan state untuk bottom nav
 
   @override
   void initState() {
     super.initState();
-    fetchLayananSelesai();
+    _fetchInitialData();
   }
 
-  Future<void> fetchLayananSelesai() async {
+  Future<void> _fetchInitialData() async {
     try {
       final response = await http.get(Uri.parse("$baseUrl/pendaftar"));
       if (mounted) {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
-          setState(() {
-            layananSelesai = (data["data"] ?? [])
-                .where((layanan) =>
-                    (layanan["status_layanan"]?.toLowerCase().trim() ?? "") == "selesai" &&
-                    layanan["user_id"] == widget.userId)
-                .toList();
-          });
+          final list = (data["data"] ?? []) as List<dynamic>;
+          Provider.of<AntrianProvider>(context, listen: false).setPendaftar(list);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Gagal memuat data: ${response.statusCode}")),
@@ -58,19 +57,181 @@ class _StatusLayananScreenState extends State<StatusLayananScreen> {
   }
 
   Widget _buildStatusChip(String status) {
+    Color chipColor;
+    String statusText;
+
+    switch (status.toLowerCase()) {
+      case 'selesai':
+        chipColor = Colors.green;
+        statusText = 'Selesai';
+        break;
+      case 'terverifikasi':
+        chipColor = Colors.blue;
+        statusText = 'Terverifikasi';
+        break;
+      case 'menunggu':
+        chipColor = Colors.orange;
+        statusText = 'Menunggu';
+        break;
+      case 'ditolak':
+        chipColor = Colors.red;
+        statusText = 'Ditolak';
+        break;
+      default:
+        chipColor = Colors.grey;
+        statusText = status;
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
+        color: chipColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        "Selesai",
+        statusText,
         style: GoogleFonts.poppins(
-          color: Colors.green,
+          color: chipColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const Color kPrimary = Color(0xFF2563EB);
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        automaticallyImplyLeading: false, // hilangkan back icon
+        title: Text(
+          "Pendaftar Selesai",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF2563EB), Color(0xFF1E3A8A)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Consumer<AntrianProvider>(
+          builder: (context, antrianProvider, child) {
+            final pendaftarSelesai = antrianProvider.pendaftar.where((user) {
+              final status = (user["status_layanan"] ?? user["status"] ?? "")
+                  .toString()
+                  .toLowerCase();
+              return status == "selesai";
+            }).toList();
+
+            return isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                : pendaftarSelesai.isEmpty
+                    ? _buildEmptyState()
+                    : AnimationLimiter(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(12, 100, 12, 20),
+                          itemCount: pendaftarSelesai.length,
+                          itemBuilder: (context, index) {
+                            final user = pendaftarSelesai[index] as Map<String, dynamic>;
+                            return AnimationConfiguration.staggeredList(
+                              position: index,
+                              duration: const Duration(milliseconds: 300),
+                              child: SlideAnimation(
+                                verticalOffset: 40.0,
+                                child: FadeInAnimation(
+                                  child: Card(
+                                    elevation: 0,
+                                    margin: const EdgeInsets.symmetric(vertical: 6),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    color: Colors.white,
+                                    child: ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 10),
+                                      leading: CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: kPrimary.withOpacity(0.15),
+                                        child: const Icon(
+                                          Icons.check_circle_outline,
+                                          color: kPrimary,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      title: Text(
+                                        user["nama"] ?? "Nama tidak tersedia",
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        "Layanan: ${user["jenis_layanan"] ?? '-'}",
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.grey[600],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      trailing: _buildStatusChip("Selesai"),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+          },
+        ),
+      ),
+      // ✅ FOOTER NAVIGATION BAR
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _bottomIndex,
+        onTap: (i) {
+          if (i == 0) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(user: {"id": 0}),
+              ),
+            );
+          } else if (i == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdminLoginScreen()), // Changed from LoginAdminScreen
+            );
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: kPrimary,
+        unselectedItemColor: Colors.grey[400],
+        selectedLabelStyle: GoogleFonts.poppins(
           fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
+        unselectedLabelStyle: GoogleFonts.poppins(
+          fontWeight: FontWeight.w500,
+          fontSize: 11,
+        ),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.login_rounded), label: "Login Admin"),
+        ],
       ),
     );
   }
@@ -80,107 +241,27 @@ class _StatusLayananScreenState extends State<StatusLayananScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 80,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 20),
+          Icon(Icons.check_circle_outline, size: 90, color: Colors.white70),
+          const SizedBox(height: 16),
           Text(
-            "Belum Ada Layanan Selesai",
+            "Belum Ada Data Selesai",
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            "Layanan yang selesai akan muncul di sini.",
+            "Pendaftar dengan status 'Selesai' akan muncul di sini.",
             style: GoogleFonts.poppins(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Colors.white70,
             ),
             textAlign: TextAlign.center,
           ),
         ],
       ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          "Status Layanan Selesai",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : layananSelesai.isEmpty
-              ? _buildEmptyState()
-              : AnimationLimiter(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: layananSelesai.length,
-                    itemBuilder: (context, index) {
-                      final layanan = layananSelesai[index];
-                      return AnimationConfiguration.staggeredList(
-                        position: index,
-                        duration: const Duration(milliseconds: 375),
-                        child: SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: Card(
-                              margin: const EdgeInsets.only(bottom: 16),
-                              elevation: 4,
-                              shadowColor: Colors.black.withOpacity(0.1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            layanan["nama"] ?? "Nama tidak tersedia",
-                                            style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "No. Antrian: ${layanan["nomor_antrian"] ?? "Tidak tersedia"}",
-                                            style: GoogleFonts.poppins(
-                                              color: Colors.grey[600],
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    _buildStatusChip(layanan["status_layanan"] ?? "Selesai"),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
     );
   }
 }

@@ -1,6 +1,6 @@
-// verifikasi_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../providers/antrian_provider.dart';
@@ -23,7 +23,8 @@ class _VerifikasiScreenState extends State<VerifikasiScreen> {
       final response = await http.get(Uri.parse("$baseUrl/pendaftar"));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        Provider.of<AntrianProvider>(context, listen: false).setPendaftar(data["data"]);
+        Provider.of<AntrianProvider>(context, listen: false)
+            .setPendaftar(data["data"]);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Gagal memuat data")),
@@ -40,16 +41,19 @@ class _VerifikasiScreenState extends State<VerifikasiScreen> {
 
   Future<void> verifikasiUser(int userId, BuildContext context) async {
     try {
-      final response = await http.post(Uri.parse("$baseUrl/verifikasi/$userId"));
+      final response =
+          await http.post(Uri.parse("$baseUrl/verifikasi/$userId"));
       final data = json.decode(response.body);
 
       if (response.statusCode == 200 && data["success"] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("User diverifikasi ✅ Nomor antrian: ${data['nomor_antrian']}")),
+          SnackBar(
+              content: Text(
+                  "✅ Diverifikasi! Nomor antrian: ${data['nomor_antrian']}")),
         );
 
-        // Perbarui data pendaftar
-        Provider.of<AntrianProvider>(context, listen: false).updatePendaftarAfterVerification(
+        Provider.of<AntrianProvider>(context, listen: false)
+            .updatePendaftarAfterVerification(
           userId,
           {
             "status": "Terverifikasi",
@@ -80,15 +84,39 @@ class _VerifikasiScreenState extends State<VerifikasiScreen> {
     return Consumer<AntrianProvider>(
       builder: (context, antrianProvider, child) {
         return Scaffold(
+          backgroundColor: Colors.grey[100],
           appBar: AppBar(
-            title: const Text("Verifikasi Antrian"),
-            backgroundColor: Colors.blue,
+            automaticallyImplyLeading: false, // Remove back button
+            backgroundColor: Colors.blue[700],
+            elevation: 4,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+            title: Text(
+              "Verifikasi Antrian",
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
           body: isLoading
               ? const Center(child: CircularProgressIndicator())
               : antrianProvider.pendaftar.isEmpty
-                  ? const Center(child: Text("Belum ada pendaftar"))
+                  ? Center(
+                      child: Text("Belum ada pendaftar",
+                          style: GoogleFonts.poppins(
+                              fontSize: 16, color: Colors.grey[600])),
+                    )
                   : ListView.builder(
+                      padding: const EdgeInsets.all(16),
                       itemCount: antrianProvider.pendaftar.length,
                       itemBuilder: (context, index) {
                         final user = antrianProvider.pendaftar[index];
@@ -96,32 +124,93 @@ class _VerifikasiScreenState extends State<VerifikasiScreen> {
                         final status = user["status_layanan"];
                         final userStatus = user["status"];
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                          child: ListTile(
-                            title: Text(user["nama"]),
-                            subtitle: Text(
-                              "NIK: ${user["nik"]}\nLayanan: ${user["jenis_layanan"]}\nStatus: ${userStatus ?? 'Menunggu Verifikasi'}",
-                            ),
-                            trailing: nomorAntrian == null && userStatus != "Terverifikasi"
-                                ? ElevatedButton(
-                                    onPressed: () => verifikasiUser(user["user_id"], context),
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                    child: const Text("Verifikasi"),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "No: $nomorAntrian",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.blue,
-                                        ),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3))
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Informasi User
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(user["nama"],
+                                        style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16)),
+                                    const SizedBox(height: 6),
+                                    Text("👤 NIK: ${user["nik"]}",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: Colors.grey[700])),
+                                    Text("📌 Layanan: ${user["jenis_layanan"]}",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: Colors.grey[700])),
+                                    Text(
+                                        "📄 Status: ${userStatus ?? 'Menunggu Verifikasi'}",
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: Colors.grey[700])),
+                                  ],
+                                ),
+                              ),
+
+                              // Bagian kanan: tombol / nomor antrian
+                              nomorAntrian == null &&
+                                      userStatus != "Terverifikasi"
+                                  ? ElevatedButton.icon(
+                                      onPressed: () => verifikasiUser(
+                                          user["user_id"], context),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green[600],
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 8),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10)),
                                       ),
-                                      Text(status ?? "-"),
-                                    ],
-                                  ),
+                                      icon: const Icon(Icons.check, size: 16),
+                                      label: Text("Verifikasi",
+                                          style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500)),
+                                    )
+                                  : Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Chip(
+                                          label: Text(
+                                            "No: $nomorAntrian",
+                                            style: GoogleFonts.poppins(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue[700]),
+                                          ),
+                                          backgroundColor: Colors.blue[50],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          status ?? "-",
+                                          style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
+                            ],
                           ),
                         );
                       },
