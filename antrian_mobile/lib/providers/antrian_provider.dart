@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class AntrianProvider with ChangeNotifier {
   // ====== DATA STATE ======
@@ -8,6 +9,7 @@ class AntrianProvider with ChangeNotifier {
   int _nowServingIndex = 0;
 
   final FlutterTts _flutterTts = FlutterTts();
+  IO.Socket? socket; // WebSocket client
 
   // ====== GETTER ======
   List<dynamic> get pendaftar => _pendaftar;
@@ -20,6 +22,47 @@ class AntrianProvider with ChangeNotifier {
   // ====== CONSTRUCTOR ======
   AntrianProvider() {
     _initTts();
+    _initSocket(); // <-- Socket otomatis jalan
+  }
+
+  // ====== INIT SOCKET ======
+  void _initSocket() {
+    socket = IO.io(
+      "http://10.0.2.2:3000", // Android Emulator → ganti pakai IP laptop jika di device asli
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build(),
+    );
+
+    socket!.connect();
+
+    socket!.onConnect((_) {
+      debugPrint("✅ Socket connected: ${socket!.id}");
+    });
+
+    socket!.onDisconnect((_) {
+      debugPrint("❌ Socket disconnected");
+    });
+
+    // Saat ada update antrian dari server
+    socket!.on("updateAntrian", (data) {
+      debugPrint("📥 updateAntrian dari server: $data");
+      if (data is List) {
+        _antrian = data;
+      } else if (data is Map) {
+        _antrian.add(data);
+      }
+      notifyListeners();
+    });
+  }
+
+  // Emit event ke server
+  void emitNext() {
+    if (nowServing != null) {
+      socket?.emit("nextAntrian", nowServing);
+      debugPrint("📤 Emit nextAntrian: $nowServing");
+    }
   }
 
   // ====== INIT TTS ======
@@ -27,7 +70,7 @@ class AntrianProvider with ChangeNotifier {
     await _flutterTts.setLanguage("id-ID"); // Bahasa Indonesia
     await _flutterTts.setPitch(1.0);
     await _flutterTts.setSpeechRate(0.9); // sedikit lebih lambat
-    await _flutterTts.awaitSpeakCompletion(false); // tidak nunggu selesai
+    await _flutterTts.awaitSpeakCompletion(false);
 
     // Debug logging
     _flutterTts.setStartHandler(() {
@@ -141,6 +184,8 @@ class AntrianProvider with ChangeNotifier {
           "Nomor antrian $nomor, atas nama $nama, silakan menuju loket.";
       debugPrint("➡️ Next: $text");
       _speak(text);
+
+      emitNext(); // kirim ke server biar broadcast ke semua client
       notifyListeners();
     }
   }
@@ -179,5 +224,12 @@ class AntrianProvider with ChangeNotifier {
       _speak(text);
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    socket?.disconnect();
+    socket?.dispose();
+    super.dispose();
   }
 }

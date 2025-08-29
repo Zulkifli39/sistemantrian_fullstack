@@ -225,7 +225,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
               // Footer
               Text(
-                "© 2024 Admin Panel",
+                "© 2025 BPKAD PALOPO ADMIN",
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   color: Colors.grey[500],

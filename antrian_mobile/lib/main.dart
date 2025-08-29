@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         key: UniqueKey(), // Memaksa rebuild saat hot reload
-        title: 'Sistem Antrian',
+        title: 'Antrian BPKAD Palopo',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           scaffoldBackgroundColor: Colors.white,
